@@ -1,0 +1,53 @@
+#testing personality as a factor in chance of winning
+
+```{r}
+castaways
+```
+
+```{r}
+not_winners_p <- castaway_df %>%
+  filter(!castaway_id %in% c(winner_list$winner_id))
+glimpse(not_winners_age)
+```
+
+```{r}
+not_winners_personality <- not_winners_p %>% group_by(personality_type) %>% tally()
+colnames(not_winners_personality)[2] ="not_winners"
+glimpse(not_winners_personality)
+```
+
+```{r}
+winners_personality <- winners %>% group_by(personality_type) %>% tally()
+colnames(winners_personality)[2] ="winners"
+glimpse(winners_personality)
+```
+
+```{r}
+#combining two columns
+all_contestants_personality = data.frame(not_winners_personality, winners_personality$winners)
+#rename column
+colnames(all_contestants_personality)[3] ="winners"
+#filter out NAs
+all_contestants_personality <- all_contestants_personality|>
+  filter(personality_type != "NA")
+#add total row
+all_contestants_personality[nrow(all_contestants_personality) + 1,] <- c("total", 555, 44)
+#convert values to integers
+all_contestants_personality$not_winners <- strtoi(all_contestants_personality$not_winners)
+all_contestants_personality$winners <- strtoi(all_contestants_personality$winners)
+#create expected column
+all_contestants_personality$expected <- (44/555)*(all_contestants_personality$not_winners)
+#finding z scores
+all_contestants_personality$z <- 
+  (all_contestants_personality$winners - all_contestants_personality$expected)/sqrt(all_contestants_personality$expected)
+
+glimpse(all_contestants_personality)
+```
+
+```{r}
+Chi_square <- sum(all_contestants_personality$z*all_contestants_personality$z)
+```
+
+```{r}
+p_value_personality <- 1 - pchisq(Chi_square, 15)
+```
