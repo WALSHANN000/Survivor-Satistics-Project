@@ -1,0 +1,85 @@
+#testing age as a factor in chance of winning
+
+```{r}
+castaway_df <- castaways %>% 
+     left_join(castaway_details, by = c("castaway_id" = "castaway_id"))
+```
+
+```{r}
+not_winners_age <- castaway_df %>%
+  filter(!castaway_id %in% c(winner_list$winner_id))
+glimpse(not_winners_age)
+```
+
+```{r}
+view(not_winners_age)
+```
+
+```{r}
+#age of non winners histogram
+ggplot(data = not_winners_age, aes(x = age)) + geom_histogram(binwidth = .5)
+```
+
+```{r}
+summary(not_winners_age$age)
+```
+
+```{r}
+winners <- castaway_df |>
+  filter(castaways$result == "Sole Survivor"
+)
+glimpse(winners)
+```
+
+```{r}
+view(winners)
+```
+
+```{r}
+# age of winners histogram
+ggplot(data = winners, aes(x = age)) + geom_histogram()
+```
+
+#hypothesis testing
+```{r}
+pwa = mean(winners$age, trim = 0, na.rm = TRUE)
+nw = 60
+sdw = sd(winners$age)
+```
+
+```{r}
+pta = mean(not_winners_age$age, trim = 0, na.rm = TRUE)
+nt = 899
+sdt = sd(not_winners_age$age %>% na.omit())
+```
+
+```{r}
+SE_age = sqrt((sdw*sdw)/nw + (sdt*sdt)/nt)
+```
+
+```{r}
+df = nw - 1 + nt - 1
+```
+
+```{r}
+t = (pwa - pta)/SE_age
+```
+
+```{r}
+p_value_age = 2*(pt(t, df))
+```
+
+
+#Confidence interval
+```{r}
+t_star = qt(.95 + .05/2, df)
+```
+
+```{r}
+ME_age = t_star*SE_age
+```
+
+```{r}
+CI_lower_age = pwa - pta - ME_age
+CI_upper_age = pwa - pta + ME_age
+```
