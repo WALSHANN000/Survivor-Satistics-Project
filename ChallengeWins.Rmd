@@ -1,0 +1,155 @@
+#testing number of challenge wins as a factor in chance of winning
+
+```{r}
+# number of challenge wins per castaway
+challenge_stats <- challenge_results |> 
+  group_by(castaway_id) |> 
+  summarise(
+    won = sum(result == "Won"),
+    total_challenges = n(),
+    percentage_won = (won/total_challenges)
+  )
+glimpse(challenge_stats)
+```
+
+```{r}
+# who won the most challenges
+challenge_stats |>
+  filter(percentage_won > .8)
+```
+#most challenge wins is Ozzy
+#perfect challenge winns is Lilliana Gomez season 14  - her tribe chose to give up immunity and she was voted off
+
+```{r}
+summary(challenge_stats$percentage_won)
+```
+
+```{r}
+# percentage of challenges won histogram
+ggplot(data = challenge_stats, aes(x = percentage_won)) + geom_histogram()
+```
+
+```{r}
+# number of challenge wins versus number of challenges competed in (per castaway)
+ggplot(data = challenge_stats, aes(x = total_challenges, y = won)) + geom_point() + geom_smooth(method=lm, se=FALSE) + annotate("text",x=10, y=50, label = (paste0("slope==", coef(lm(challenge_stats$won~challenge_stats$total_challenges))[2])), parse=TRUE)
+```
+
+#non winners
+```{r}
+winner_list <- df %>%
+  select(winner_id)
+
+glimpse(winner_list)
+```
+
+```{r}
+not_winners_challenge_stats <- challenge_stats %>%
+  filter(!castaway_id %in% c(winner_list$winner_id))
+glimpse(not_winners_challenge_stats)
+```
+
+```{r}
+# percentage of challenges won histogram (non winners)
+ggplot(data = not_winners_challenge_stats, aes(x = percentage_won)) + geom_histogram()
+```
+
+```{r}
+# number of challenge wins versus number of challenges competed in (per non winning castaway)
+ggplot(data = not_winners_challenge_stats, aes(x = total_challenges, y = won)) + geom_point() + geom_smooth(method=lm, se=FALSE) + annotate("text",x=10, y=50, label = (paste0("slope==", coef(lm(not_winners_challenge_stats$won~not_winners_challenge_stats$total_challenges))[2])), parse=TRUE)
+```
+
+```{r}
+df <- season_summary %>% 
+     left_join(challenge_results, by = c("winner_id" = "castaway_id"))
+```
+
+#df table has episode summaries for season winners
+
+```{r}
+# number of challenge wins per winning castaway
+winners_challenge_stats <- df |> 
+  group_by(version_season.x) |> 
+  summarise(
+    won = sum(result == "Won"),
+    total_challenges = n(),
+    percentage_won = (won/total_challenges)
+  )
+glimpse(winners_challenge_stats)
+```
+
+```{r}
+view(df)
+```
+
+```{r}
+# who won the most challenges
+winners_challenge_stats |>
+  filter(won > 30)
+```
+
+```{r}
+# number of challenge wins versus number of challenges competed in (per castaway)
+ggplot(data = winners_challenge_stats, aes(x = total_challenges, y = won)) + geom_point() + geom_smooth(method=lm, se=FALSE) + annotate("text",x=20, y=50, label = (paste0("slope==", coef(lm(winners_challenge_stats$won~winners_challenge_stats$total_challenges))[2])), parse=TRUE)
+```
+
+```{r}
+# percentage of challenges won for winners histogram
+ggplot(data = winners_challenge_stats, aes(x = percentage_won)) + geom_histogram()
+```
+
+```{r}
+summary(challenge_stats$percentage_won)
+```
+#Robert "Bob" Crowley season 17 had highest percentage - 63.64%
+#Natalie white season 19 had lowest percentage - 13.04%
+
+Ho: mean challenge wins for winners (pw) is the same as overall mean challenge wins (pt)
+
+```{r}
+pw = mean(winners_challenge_stats$percentage_won, trim = 0, na.rm = TRUE)
+nw = 60
+```
+
+```{r}
+pt = mean(not_winners_challenge_stats$percentage_won, trim = 0, na.rm = TRUE)
+nt = 899
+```
+
+```{r}
+p_pool = (nw*pw + nt*pt)/(nw+nt)
+```
+
+```{r}
+SE = sqrt(p_pool*(1 - p_pool)*((1/nw) + (1/nt)))
+```
+
+```{r}
+z = ((pw-pt)-0)/SE
+```
+
+```{r}
+p_value = 2*(1-pnorm(z,0,1))
+```
+
+#p_value = .997 so Ho is rejected
+#therefore, number of challenge wins has an impact on your chances of winning
+
+```{r}
+SE_CI = sqrt(((pw*(1-pw))/nw) + ((pt*(1-pt))/nt))
+```
+
+```{r}
+z_star = qnorm(.95 + (.05/2), 0, 1)
+```
+
+```{r}
+ME = z_star*SE_CI
+```
+
+```{r}
+CI_lower = pw-pt - ME
+```
+
+```{r}
+CI_upper = pw-pt + ME
+```
